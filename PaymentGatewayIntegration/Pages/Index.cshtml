@@ -1,0 +1,79 @@
+﻿@page
+@model PaymentGatewayIntegration.Pages.IndexModel
+@{
+    ViewData["Title"] = "Payment Integration";
+}
+
+<div class="text-center">
+    <h1 class="display-4">Welcome</h1>
+    <p>Learn about <a href="https://docs.microsoft.com/aspnet/core">building Web apps with ASP.NET Core</a>.</p>
+</div>
+<h1>Payment Integration</h1>
+
+@if (TempData["ErrorMessage"] != null)
+{
+    <div class="alert alert-danger">@TempData["ErrorMessage"]</div>
+}
+<form method="post">
+    <div class="form-group">
+        <label for="amount">Amount:</label>
+        <input type="text" id="amount" name="PaymentIntent.Amount" class="form-control" required>
+    </div>
+
+    <div class="form-group">
+        <label for="gateway">Payment Gateway:</label>
+        <select id="gateway" name="PaymentIntent.PaymentGatewayEnum" class="form-control" required>
+            <option value="1">eSewa</option>
+            <option value="2">Khalti</option>
+            <option value="3">Stripe</option>
+        </select>
+    </div>
+
+    <button type="submit" class="btn btn-primary">Pay</button>
+</form>
+
+@if (Model.PaymentSession != null && Model.PaymentSession.IsSuccess)
+{
+    @if (Model.PaymentIntent.PaymentGatewayEnum == PaymentGatewayIntegration.Model.PaymentGatewayEnum.Stripe)
+    {
+        <script>
+            window.location.href = "@Model.PaymentSession.Url";
+        </script>
+    }
+    else if (Model.PaymentIntent.PaymentGatewayEnum == PaymentGatewayIntegration.Model.PaymentGatewayEnum.Khalti)
+    {
+        @if (!string.IsNullOrEmpty(Model.PaymentSession.Url))
+        {
+            <script>
+                window.location.href = "@Model.PaymentSession.Url";
+            </script>
+        }
+        else
+        {
+            <div class="alert alert-danger">Payment session failed or URL is missing.</div>
+        }
+    }
+    else if (Model.PaymentIntent.PaymentGatewayEnum == PaymentGatewayIntegration.Model.PaymentGatewayEnum.Esewa)
+    {
+        @if (Model.PaymentSession.FormData != null && Model.PaymentSession.FormData.Any())
+        {
+            <form id="paymentForm" method="post" action="@Model.PaymentSession.FormData["url"]">
+                @foreach (var item in Model.PaymentSession.FormData)
+                {
+                    if (item.Key != "url")
+                    {
+                        <input type="hidden" name="@item.Key" value="@item.Value" />
+                    }
+                }
+            </form>
+
+            <script>
+                document.getElementById('paymentForm').submit();
+            </script>
+        }
+        else
+        {
+            <div class="alert alert-danger">Payment session failed or form data is missing.</div>
+        }
+    }
+}
